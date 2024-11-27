@@ -1,117 +1,85 @@
 import express from 'express'
-import fs from 'fs'
-import path from 'path'
+import {
+  getAllTodos,
+  addTodoToList,
+  updateTodoInList,
+  deleteTodoFromList,
+} from '../services/todosService.js'
 
 const router = express.Router()
 
-const todosFilePath = path.resolve('src/todo.json')
-
-const readTodosFromFile = () => {
-  try {
-    const data = fs.readFileSync(todosFilePath, 'utf8')
-    return JSON.parse(data)
-  } catch (err) {
-    console.error('Error reading todos file:', err)
-    return []
-  }
-}
-
-const writeTodosToFile = (todos) => {
-  try {
-    fs.writeFileSync(todosFilePath, JSON.stringify(todos, null, 2), 'utf8')
-  } catch (err) {
-    console.error('Error writing todos file:', err)
-  }
-}
-
-// Route that gets all the todos
+/**
+ * @route GET /
+ * @description Retrieve all todo lists with their associated todos.
+ * @returns {Object.<string, TodoList>} JSON object of all todo lists keyed by list IDs.
+ * @throws {500} Internal server error if the todos cannot be fetched.
+ */
 router.get('/', (req, res) => {
-  const todos = readTodosFromFile()
-  res.json(todos)
+  try {
+    const todos = getAllTodos()
+    res.json(todos)
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch todos' })
+  }
 })
 
-// Add a new todo
+/**
+ * @route POST /:listId
+ * @description Add a new todo to the specified list.
+ * @param {string} req.params.listId - The ID of the list to which the todo will be added.
+ * @param {Object} req.body - The todo data (e.g., text, completed, finishDate).
+ * @returns {TodoList} The updated list with the new todo.
+ * @throws {404} List not found if the specified list ID does not exist.
+ */
 router.post('/:listId', (req, res) => {
-  const listId = req.params.listId
-  const input = req.body
-
-  const allLists = readTodosFromFile()
-
-  if (!allLists[listId]) {
-    return res.status(404).json({ message: 'List not found' })
+  try {
+    const { listId } = req.params
+    const todo = req.body
+    const updatedList = addTodoToList(listId, todo)
+    res.status(201).json(updatedList)
+  } catch (error) {
+    res.status(404).json({ message: error.message })
   }
-
-  if (input) {
-    allLists[listId].todos.push(input)
-  }
-
-  writeTodosToFile(allLists)
-
-  res.status(201).json(allLists[listId])
 })
 
-// Update todo
+/**
+ * @route PATCH /:listId/:todoId
+ * @description Update an existing todo in the specified list.
+ * @param {string} req.params.listId - The ID of the list containing the todo.
+ * @param {string} req.params.todoId - The ID of the todo to update.
+ * @param {Object} req.body - The fields to update in the todo (e.g., text, completed).
+ * @returns {TodoItem} The updated todo object.
+ * @throws {404} List or Todo not found if the IDs do not exist.
+ * @throws {400} Bad request if the request body is empty.
+ */
 router.patch('/:listId/:todoId', (req, res) => {
-  const { listId, todoId } = req.params
-  const input = req.body
-
-  if (!input || Object.keys(input).length === 0) {
-    return res.status(400).json({ message: 'Invalid input, no data provided' })
+  try {
+    const { listId, todoId } = req.params
+    const updates = req.body
+    const updatedTodo = updateTodoInList(listId, todoId, updates)
+    res.json(updatedTodo)
+  } catch (error) {
+    const status =
+      error.message === 'List not found' || error.message === 'Todo not found' ? 404 : 400
+    res.status(status).json({ message: error.message })
   }
-
-  const allLists = readTodosFromFile()
-
-  if (!allLists[listId]) {
-    return res.status(404).json({ message: 'List not found' })
-  }
-
-  const todos = allLists[listId].todos
-
-  console.log('todoId', todoId)
-  console.log('todos', todos)
-
-  const todoIndex = todos.findIndex((item) => item.id === todoId)
-
-  if (todoIndex === -1) {
-    return res.status(404).json({ message: 'Todo not found' })
-  }
-
-  const updatedTodo = {
-    ...todos[todoIndex],
-    ...input,
-  }
-
-  if (input) {
-    todos[todoIndex] = updatedTodo
-  }
-
-  writeTodosToFile(allLists)
-
-  res.json(updatedTodo)
 })
 
-// Delete todo
+/**
+ * @route DELETE /:listId/:todoId
+ * @description Delete a specific todo from a list.
+ * @param {string} req.params.listId - The ID of the list containing the todo.
+ * @param {string} req.params.todoId - The ID of the todo to delete.
+ * @returns {Object} An object containing the ID of the deleted todo.
+ * @throws {404} List or Todo not found if the IDs do not exist.
+ */
 router.delete('/:listId/:todoId', (req, res) => {
-  const { listId, todoId } = req.params
-  const allLists = readTodosFromFile()
-
-  const isListInvalid = !allLists[listId]
-  if (isListInvalid) {
-    return res.status(404).json({ message: 'List not found' })
-  }
-
-  const todos = allLists[listId].todos
-
-  const filteredTodos = todos.filter((item) => item.id !== todoId)
-
-  if (filteredTodos.length !== todos.length) {
-    allLists[listId].todos = filteredTodos
-
-    writeTodosToFile(allLists)
-
-    res.json(todoId)
-  } else {
-    res.status(404).json({ message: 'Todo not found' })
+  try {
+    const { listId, todoId } = req.params
+    const deletedTodoId = deleteTodoFromList(listId, todoId)
+    res.json({ id: deletedTodoId })
+  } catch (error) {
+    res.status(404).json({ message: error.message })
   }
 })
 

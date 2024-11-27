@@ -12,11 +12,16 @@ import ReceiptIcon from '@mui/icons-material/Receipt'
 import { TodoListForm } from './TodoListForm'
 import { fetchTodos } from '../../api'
 
+// Styles
+const cardStyle = { margin: '1rem' }
+const cardContentStyle = { padding: '1rem' }
+const listItemTextStyle = (completed) => ({
+  color: completed ? 'green' : 'inherit',
+})
+
 export const TodoLists = ({ style }) => {
   const [todoLists, setTodoLists] = useState({})
   const [activeList, setActiveList] = useState()
-
-  console.log('1todoList', todoLists)
 
   useEffect(() => {
     const fetchAndSetTodos = async () => {
@@ -31,23 +36,35 @@ export const TodoLists = ({ style }) => {
     fetchAndSetTodos()
   }, [])
 
+  // Helper to check if a list is completed
+  const isListCompleted = (listId) => {
+    const todos = todoLists[listId]?.todos || []
+    return todos.length > 0 && todos.every((todo) => todo.completed)
+  }
+
   if (!Object.keys(todoLists).length) return null
 
   return (
     <Fragment>
-      <Card style={style}>
-        <CardContent>
+      <Card style={{ ...cardStyle, ...style }}>
+        <CardContent style={cardContentStyle}>
           <Typography component='h2'>My Todo Lists</Typography>
 
           <List>
-            {Object.keys(todoLists).map((key) => (
-              <ListItemButton key={key} onClick={() => setActiveList(key)}>
-                <ListItemIcon>
-                  <ReceiptIcon />
-                </ListItemIcon>
-                <ListItemText primary={todoLists[key].title} />
-              </ListItemButton>
-            ))}
+            {Object.keys(todoLists).map((key) => {
+              const completed = isListCompleted(key)
+              return (
+                <ListItemButton key={key} onClick={() => setActiveList(key)}>
+                  <ListItemIcon>
+                    <ReceiptIcon />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={`${todoLists[key].title} ${completed ? '(Completed)' : ''}`}
+                    style={listItemTextStyle(completed)}
+                  />
+                </ListItemButton>
+              )
+            })}
           </List>
         </CardContent>
       </Card>

@@ -1,26 +1,14 @@
-import React, { useState, useMemo, useEffect } from 'react'
-import { TextField, Card, CardContent, CardActions, Button, Typography } from '@mui/material'
-import DeleteIcon from '@mui/icons-material/Delete'
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
-import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import React, { useState, useMemo } from 'react'
+import { Card, CardContent, CardActions, Button, Typography } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import { addTodo, updateTodo, deleteTodo } from '../../api'
+import { getRandomFinishDate, debounce, TODO_TEMPLATE } from '../../utils'
+import { TodoItem } from './TodoItem'
 
-const TODO_TEMPLATE = {
-  text: '',
-  completed: false,
-  finishDate: '',
-  id: '',
-  startDate: '',
-}
-
-const debounce = (func, delay) => {
-  let timer
-  return (...args) => {
-    clearTimeout(timer)
-    timer = setTimeout(() => func(...args), delay)
-  }
-}
+// Styles
+const cardStyle = { margin: '0 1rem' }
+const cardContentStyle = { display: 'flex', flexDirection: 'column', flexGrow: 1 }
+const formStyle = { display: 'flex', flexDirection: 'column', flexGrow: 1 }
 
 export const TodoListForm = ({ todoList, saveTodoList }) => {
   const [todos, setTodos] = useState(todoList.todos)
@@ -46,14 +34,18 @@ export const TodoListForm = ({ todoList, saveTodoList }) => {
   }
 
   const handleAddTodo = async () => {
-    const newTodo = { ...TODO_TEMPLATE, ...{ id: crypto.randomUUID(), startDate: Date.now() } }
-
+    const newTodo = {
+      ...TODO_TEMPLATE,
+      ...{ id: crypto.randomUUID(), startDate: new Date().toISOString() },
+      finishDate: getRandomFinishDate(),
+    }
     // Optimistic update
     const updatedTodos = [...todos, newTodo]
     setTodos(updatedTodos)
 
     try {
       await addTodo(listId, newTodo)
+      saveTodoList(listId, { todos: updatedTodos })
     } catch (error) {
       console.error('Failed to add todo:', error)
 
@@ -72,7 +64,6 @@ export const TodoListForm = ({ todoList, saveTodoList }) => {
       )
 
       const updatedTodo = { ...prevTodos.find((todo) => todo.id === todoId), text: newValue }
-
       debouncedUpdateTodo(listId, todoId, updatedTodo, updatedTodos)
 
       return updatedTodos
@@ -80,33 +71,31 @@ export const TodoListForm = ({ todoList, saveTodoList }) => {
   }
 
   const handleComplete = (todoId) => {
-    const indexToUpdate = todos.findIndex((item) => item.id === todoId)
+    // Optimistic update
+    setTodos((prevTodos) => {
+      const updatedTodos = prevTodos.map((todo) =>
+        todo.id === todoId ? { ...todo, completed: !todo.completed } : todo
+      )
 
-    if (indexToUpdate !== -1) {
-      const prevTodos = [...todos]
-
-      // Optimistic update
-      const updatedTodo = [...todos]
-      updatedTodo[indexToUpdate] = {
-        ...updatedTodo[indexToUpdate],
-        completed: !updatedTodo[indexToUpdate].completed,
+      const updatedTodo = {
+        ...prevTodos.find((todo) => todo.id === todoId),
+        completed: !prevTodos.find((todo) => todo.id === todoId).completed,
       }
 
-      setTodos(updatedTodo)
-      debouncedUpdateTodo(listId, todoId, updatedTodo[indexToUpdate], prevTodos)
-    }
+      debouncedUpdateTodo(listId, todoId, updatedTodo, updatedTodos)
+
+      return updatedTodos
+    })
   }
 
   const handleDelete = async (todoId) => {
     // Optimistic update
     const updatedTodos = todos.filter((todo) => todo.id !== todoId)
-    setTodos(updatedTodos) // Update local state
+    setTodos(updatedTodos)
 
     try {
       await deleteTodo(listId, todoId)
-
       saveTodoList(listId, { todos: updatedTodos })
-      console.log('Deleted successfully and updated parent state')
     } catch (error) {
       console.error('Failed to delete todo:', error)
 
@@ -116,56 +105,21 @@ export const TodoListForm = ({ todoList, saveTodoList }) => {
   }
 
   return (
-    <Card sx={{ margin: '0 1rem' }}>
+    <Card sx={cardStyle}>
       <CardContent>
         <Typography component='h2'>{todoList.title}</Typography>
-        <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
-          <form
-            onSubmit={handleSubmit}
-            style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}
-          >
+
+        <div style={cardContentStyle}>
+          <form onSubmit={handleSubmit} style={formStyle}>
             {todos?.map((item, index) => (
-              <div key={index} style={{ display: 'flex', alignItems: 'center' }}>
-                <Typography sx={{ margin: '8px' }} variant='h6'>
-                  {index + 1}
-                </Typography>
-
-                <TextField
-                  sx={{ flexGrow: 1, marginTop: '1rem' }}
-                  label='What to do?'
-                  value={item?.text || ''}
-                  onChange={(event) => handleUpdate(event, item.id)}
-                />
-
-                {item.completed ? (
-                  <Button
-                    sx={{ my: '8px', mx: '4px' }}
-                    size='small'
-                    color='secondary'
-                    onClick={() => handleComplete(item.id)}
-                  >
-                    <CheckCircleIcon />
-                  </Button>
-                ) : (
-                  <Button
-                    sx={{ my: '8px', mx: '4px' }}
-                    size='small'
-                    color='secondary'
-                    onClick={() => handleComplete(item.id)}
-                  >
-                    <CheckCircleOutlineIcon />
-                  </Button>
-                )}
-
-                <Button
-                  sx={{ my: '8px', mx: '4px' }}
-                  size='small'
-                  color='secondary'
-                  onClick={() => handleDelete(item.id)}
-                >
-                  <DeleteIcon />
-                </Button>
-              </div>
+              <TodoItem
+                key={item.id}
+                item={item}
+                index={index}
+                onUpdate={handleUpdate}
+                onComplete={handleComplete}
+                onDelete={handleDelete}
+              />
             ))}
 
             <CardActions>
