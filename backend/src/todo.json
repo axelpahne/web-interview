@@ -1,0 +1,79 @@
+{
+  "0000000001": {
+    "id": "0000000001",
+    "title": "First List",
+    "todos": [
+      {
+        "completed": false,
+        "finishDate": "",
+        "id": "01",
+        "startDate": "",
+        "text": "First todo of first list!"
+      },
+      {
+        "id": "899a53c8-1e38-42b2-ab98-8595b5b77573",
+        "text": "Test 1",
+        "completed": false
+      },
+      {
+        "text": "Test 2",
+        "completed": false,
+        "id": "9eb192d8-7b35-4da5-b513-ac379bd0f09f"
+      },
+      {
+        "text": "asdsadasd",
+        "completed": false,
+        "id": "d677bdb1-c5af-456a-875f-8b0f4dce1d3b"
+      },
+      {
+        "text": "Elsa är en böna",
+        "completed": false,
+        "id": "c857be22-4679-4647-b18b-b95cc4a46748"
+      },
+      {
+        "text": "hej",
+        "completed": false,
+        "id": "35f7caa1-d79a-412e-b056-c78205834be3"
+      },
+      {
+        "text": "kalle",
+        "completed": false,
+        "finishDate": "",
+        "id": "4621cad3-6dc9-4d35-a575-d8a999a96df1",
+        "startDate": 1732686552492
+      }
+    ]
+  },
+  "0000000002": {
+    "id": "0000000002",
+    "title": "Second List",
+    "todos": [
+      {
+        "completed": false,
+        "finishDate": "",
+        "id": "01",
+        "startDate": "",
+        "text": "First todo of second list!"
+      },
+      {
+        "text": "TEst",
+        "completed": true,
+        "id": "445bad50-8edb-4210-8a0f-6da4ce9e80ac",
+        "finishDate": 1732685975425
+      },
+      {
+        "text": "testasdaasd",
+        "completed": false,
+        "id": "2db87479-f589-422a-a037-f4f7f5f2ede9",
+        "finishDate": ""
+      },
+      {
+        "text": "kalle anka 1",
+        "completed": false,
+        "finishDate": "",
+        "id": "b0ffeb04-a946-4042-bad0-55ada6f4c435",
+        "startDate": 1732690245328
+      }
+    ]
+  }
+}
